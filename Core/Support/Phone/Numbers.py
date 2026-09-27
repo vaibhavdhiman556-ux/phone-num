@@ -6,7 +6,7 @@
 import phonenumbers
 import MrHolmes as holmes
 import json
-import urllib
+import urllib.request
 from phonenumbers import carrier
 from phonenumbers import geocoder
 from phonenumbers import timezone
@@ -16,30 +16,35 @@ from Core.Support import Map
 from time import sleep
 
 filename = Language.Translation.Get_Language()
-filename
-
 
 class Phony:
 
     @staticmethod
     def Get_GeoLocation(zone, param1, param2, jsonfile, num, Type):
-        req = "https://nominatim.openstreetmap.org/search.php?q={}&format=json".format(
-            zone)
+        # Build request with User-Agent header (required by Nominatim policy)
+        url_string = "https://nominatim.openstreetmap.org/search.php?q={}&format=json".format(zone)
+        headers = {"User-Agent": "MrHolmes/1.0 (your_email@example.com)"}
+        req = urllib.request.Request(url_string, headers=headers)
+
         print(Font.Color.GREEN + "\n[+]" + Font.Color.WHITE +
               Language.Translation.Translate_Language(filename, "Phone", "Geo", "None").format(num))
         sleep(2)
-        url = urllib.request.urlopen(req)
+
         try:
-            Reader = url.read()
+            response = urllib.request.urlopen(req)
+            Reader = response.read()
             parser = json.loads(Reader)
+
             Lat = parser[0]["lat"]
             Lon = parser[0]["lon"]
+
             data = {
                 "Geolocation": {
                     "Latitude": Lat,
                     "Longitude": Lon
                 }
             }
+
             print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE +
                   "LATITUDE:" + Font.Color.GREEN + " {}".format(Lat))
             sleep(2)
@@ -47,17 +52,18 @@ class Phony:
                   "LONGITUDE:" + Font.Color.GREEN + " {}".format(Lon))
             sleep(2)
             print(Font.Color.YELLOW + "[v]" + Font.Color.WHITE +
-                  "GOOGLE MAPS LINK: https://www.google.it/maps/place/{},{}".format(Lat, Lon))
-            datafile = open(jsonfile, "a", encoding="utf-8")
-            json.dump(data, datafile,
-                      ensure_ascii=False, indent=4)
-            datafile.close()
+                  "GOOGLE MAPS LINK: https://www.google.com/maps/place/{},{}".format(Lat, Lon))
+
+            with open(jsonfile, "a", encoding="utf-8") as datafile:
+                json.dump(data, datafile, ensure_ascii=False, indent=4)
+
             Map.Creation.mapPhone(jsonfile, Lat, Lon, num, Type)
 
         except Exception as e:
-            print(Font.Color.RED + "\n[!]" + Font.Color.WHITE + Language.Translation.Translate_Language(
-                filename, "Phone", "NoGeo", "None") + str(e))
+            print(Font.Color.RED + "\n[!]" + Font.Color.WHITE +
+                  Language.Translation.Translate_Language(filename, "Phone", "NoGeo", "None") + str(e))
             pass
+
 
     @staticmethod
     def Number(num, report, code, Mode, Type, username):
